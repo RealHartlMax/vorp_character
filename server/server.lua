@@ -327,15 +327,16 @@ end)
 Core.Callback.Register("vorp_character:callback:GetOutfits", function(source, callback)
 	local character = Core.getUser(source).getUsedCharacter
 
-	---@diagnostic disable-next-line: undefined-global
-	MySQL.query("SELECT * FROM outfits WHERE `identifier` = ? AND `charidentifier` = ?", { character.identifier, character.charIdentifier }, function(Outfits)
+	MySQL.query("SELECT * FROM outfits WHERE `charidentifier` = ?", { character.charIdentifier }, function(Outfits)
 		return callback(Outfits)
 	end)
 end)
 
 Core.Callback.Register("vorp_character:callback:SetOutfit", function(source, callback, arguments)
-	local character = Core.getUser(source).getUsedCharacter
+	local user = Core.getUser(source)
+	if not user then return callback(false) end
 
+	local character = user.getUsedCharacter
 	character.updateComps(arguments.Outfit.comps or '{}')
 	character.updateCompTints(arguments.Outfit.compTints or '{}')
 
@@ -343,10 +344,12 @@ Core.Callback.Register("vorp_character:callback:SetOutfit", function(source, cal
 end)
 
 Core.Callback.Register("vorp_character:callback:DeleteOutfit", function(source, callback, arguments)
-	local character = Core.getUser(source).getUsedCharacter
+	local user = Core.getUser(source)
+	if not user then return callback(false) end
 
-	---@diagnostic disable-next-line: undefined-global
-	MySQL.query("DELETE FROM outfits WHERE identifier = ? AND id = ?", { character.identifier, arguments.Outfit.id })
+	local character = user.getUsedCharacter
+	-- why is it using steam? each character should have its own set of outfits
+	MySQL.query.await("DELETE FROM outfits WHERE charidentifier = ? AND id = ?", { character.charIdentifier, arguments.Outfit.id })
 
 	return callback(true)
 end)

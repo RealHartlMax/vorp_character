@@ -2956,22 +2956,24 @@ function OpenOutfitMenu(Table, value, Outfits, Outfit)
         OutfitComps.Teeth = CachedComponents.Teeth.comp
     end
 
-    local comps = {}
+    do
+        local comps = {}
 
-    for k, v in pairs(OutfitComps) do
-        comps[k] = { comp = v }
-    end
-
-    local compTints = Outfit.compTints and json.decode(Outfit.compTints) or {}
-
-    for i, tag in pairs(Config.ComponentCategories) do
-        if not Config.ComponentCategoriesExclude[i] then
-            RemoveTagFromMetaPed(tag)
-            UpdatePedVariation()
+        for k, v in pairs(OutfitComps) do
+            comps[k] = { comp = v }
         end
-    end
 
-    LoadComps(PlayerPedId(), ConvertTableComps(comps, IndexTintCompsToNumber(compTints)))
+        local compTints = Outfit.compTints and json.decode(Outfit.compTints) or {}
+
+        for i, tag in pairs(Config.ComponentCategories) do
+            if not Config.ComponentCategoriesExclude[i] then
+                RemoveTagFromMetaPed(tag)
+                UpdatePedVariation()
+            end
+        end
+
+        LoadComps(PlayerPedId(), ConvertTableComps(comps, IndexTintCompsToNumber(compTints)))
+    end
 
     local menuSpace = "<br><br><br><br><br><br><br><br><br><br><br>"
 
@@ -3045,10 +3047,7 @@ function OpenOutfitMenu(Table, value, Outfits, Outfit)
                 TriggerEvent("vorpinputs:advancedInput", json.encode(MyInput), function(result)
                     local Result = tostring(result)
                     if Result ~= nil and Result ~= "" and Result == Outfit.title then
-                        local results = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit",
-                            {
-                                Outfit = Outfit,
-                            })
+                        local results = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = Outfit, })
 
                         if results then
                             for i, v in pairs(Outfits) do
@@ -3065,4 +3064,123 @@ function OpenOutfitMenu(Table, value, Outfits, Outfit)
             end
         end
     )
+end
+
+-- EXPORT TO OPEN MENU THROUGH OTHER SCRIPTS
+local inOutfitsMenu = false
+exports("OpenOutfitsMenu", function()
+    if inOutfitsMenu then
+        print("Already in outfits menu")
+        return
+    end
+
+    local result = Core.Callback.TriggerAwait("vorp_character:callback:GetOutfits")
+    if not result then
+        print("No outfits found")
+        return
+    end
+
+    OpenExternalOutfitsMenu(result)
+    return true
+end)
+
+function OpenExternalOutfitsMenu(Outfits)
+    MenuData.CloseAll()
+
+    local elements <const> = {}
+    for _, outfit in ipairs(Outfits) do
+        outfit.comps = json.decode(outfit.comps) or {}
+        outfit.compTints = json.decode(outfit.compTints) or {}
+        elements[#elements + 1] = {
+            label = outfit.title,
+            value = outfit,
+            desc = imgPath:format('clothing_generic_outfit'),
+            footerText = T.MenuOutfits.option,
+        }
+    end
+
+    if #elements == 0 then
+        Core.NotifyObjective("You don't have any outfits go to a shop to buy one", 5000)
+        return MenuData.CloseAll(true, true, true)
+    end
+
+    inOutfitsMenu = true
+    local OutfitComps = elements[1].value
+
+    MenuData.Open('default', GetCurrentResourceName(), 'OpenExternalOutfitsMenu',
+        {
+            title = T.MenuOutfits.title,
+            subtext = T.MenuOutfits.subtitle,
+            align = Config.Align,
+            elements = elements,
+            lastmenu = "OpenClothingMenu",
+            divider = true,
+            fixedHeight = true,
+            openSound = true,
+            hideRadar = true,
+            cancelButton = {
+                label = "Delete",
+                value = "delete",
+            },
+            confirmButton = {
+                label = "Select",
+                value = "confirm",
+            },
+        },
+        function(data, menu)
+            if data.current.value ~= "delete" and data.current.value ~= "confirm" then
+                OutfitComps = data.current.value
+                local Outfit <const> = OutfitComps.comps
+
+                if (not OutfitComps.Teeth or OutfitComps.Teeth == -1) and CachedComponents.Teeth.comp ~= -1 then
+                    OutfitComps.Teeth = CachedComponents.Teeth.comp
+                end
+
+                do
+                    local comps <const> = {}
+                    for category, comp in pairs(Outfit) do
+                        comps[category] = { comp = comp }
+                    end
+
+                    for i, tag in pairs(Config.ComponentCategories) do
+                        if not Config.ComponentCategoriesExclude[i] then
+                            RemoveTagFromMetaPed(tag)
+                            UpdatePedVariation()
+                        end
+                    end
+
+                    LoadComps(PlayerPedId(), ConvertTableComps(comps, IndexTintCompsToNumber(OutfitComps.compTints)))
+                end
+            end
+
+            if data.current.value == "confirm" then
+                local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:SetOutfit", { Outfit = OutfitComps, })
+                if not result then return end
+
+                local comps <const> = {}
+                for category, comp in pairs(OutfitComps.comps) do
+                    comps[category] = { comp = comp }
+                end
+
+                local compTints <const> = OutfitComps.compTints and json.decode(OutfitComps.compTints) or {}
+                CachedComponents = ConvertTableComps(comps, IndexTintCompsToNumber(compTints))
+
+                inOutfitsMenu = false
+                return menu.close(true, true, true)
+            end
+
+            if data.current.value == "delete" then
+                local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = data.current.value, })
+                if not result then return end
+
+                menu.removeElementByIndex(data.current.index)
+                menu.refresh()
+                Core.NotifyObjective("Outfit deleted", 5000)
+                return
+            end
+        end,
+        function(_, menu)
+            inOutfitsMenu = false
+            menu.close(true, true, true)
+        end)
 end
