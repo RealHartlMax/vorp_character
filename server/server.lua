@@ -337,6 +337,14 @@ Core.Callback.Register("vorp_character:callback:SetOutfit", function(source, cal
 	if not user then return callback(false) end
 
 	local character = user.getUsedCharacter
+	if type(arguments.Outfit.comps) ~= "string" then
+		arguments.Outfit.comps = json.encode(arguments.Outfit.comps)
+	end
+
+	if type(arguments.Outfit.compTints) ~= "string" then
+		arguments.Outfit.compTints = json.encode(arguments.Outfit.compTints)
+	end
+
 	character.updateComps(arguments.Outfit.comps or '{}')
 	character.updateCompTints(arguments.Outfit.compTints or '{}')
 
@@ -355,7 +363,6 @@ Core.Callback.Register("vorp_character:callback:DeleteOutfit", function(source, 
 end)
 
 -- EXPORT TO OPEN MENU THROUGH OTHER SCRIPTS
-
 exports("OpenOutfitsMenu", function(source)
 	local user = Core.getUser(source)
 	if not user then return end

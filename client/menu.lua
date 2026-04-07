@@ -3011,7 +3011,6 @@ function OpenOutfitMenu(Table, value, Outfits, Outfit)
 
             if data.current.value == "Select" then
                 Outfit.comps = json.encode(OutfitComps)
-
                 local result = Core.Callback.TriggerAwait("vorp_character:callback:SetOutfit", { Outfit = Outfit, })
                 if result then
                     local comps = {}
@@ -3160,9 +3159,10 @@ function OpenExternalOutfitsMenu(Outfits)
                     comps[category] = { comp = comp }
                 end
 
-                local compTints <const> = OutfitComps.compTints and json.decode(OutfitComps.compTints) or {}
+                local compTints <const> = OutfitComps.compTints and OutfitComps.compTints or {}
                 CachedComponents = ConvertTableComps(comps, IndexTintCompsToNumber(compTints))
 
+                LoadComps(PlayerPedId(), ConvertTableComps(comps, IndexTintCompsToNumber(OutfitComps.compTints)))
                 inOutfitsMenu = false
                 return menu.close(true, true, true)
             end
