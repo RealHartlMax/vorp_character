@@ -3117,6 +3117,7 @@ function OpenExternalOutfitsMenu(Outfits)
             fixedHeight = true,
             openSound = true,
             hideRadar = true,
+            maxVisibleItems = 6,
             cancelButton = {
                 label = "Delete",
                 value = "delete",
