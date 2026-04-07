@@ -3011,7 +3011,8 @@ function OpenOutfitMenu(Table, value, Outfits, Outfit)
 
             if data.current.value == "Select" then
                 Outfit.comps = json.encode(OutfitComps)
-                local result = Core.Callback.TriggerAwait("vorp_character:callback:SetOutfit", { Outfit = Outfit, })
+                local packed <const> = msgpack.pack(Outfit)
+                local result = Core.Callback.TriggerAwait("vorp_character:callback:SetOutfit", { Outfit = packed, })
                 if result then
                     local comps = {}
 
@@ -3046,7 +3047,7 @@ function OpenOutfitMenu(Table, value, Outfits, Outfit)
                 TriggerEvent("vorpinputs:advancedInput", json.encode(MyInput), function(result)
                     local Result = tostring(result)
                     if Result ~= nil and Result ~= "" and Result == Outfit.title then
-                        local results = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = Outfit, })
+                        local results = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { id = Outfit.id })
 
                         if results then
                             for i, v in pairs(Outfits) do
@@ -3155,7 +3156,8 @@ function OpenExternalOutfitsMenu(Outfits)
             end
 
             if data.current.value == "confirm" then
-                local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:SetOutfit", { Outfit = OutfitComps, })
+                local packed <const> = msgpack.pack(OutfitComps)
+                local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:SetOutfit", { Outfit = packed })
                 if not result then return end
 
                 local comps <const> = {}
@@ -3166,7 +3168,7 @@ function OpenExternalOutfitsMenu(Outfits)
                 local compTints <const> = OutfitComps.compTints and OutfitComps.compTints or {}
                 CachedComponents = ConvertTableComps(comps, IndexTintCompsToNumber(compTints))
 
-                ExecuteCommand(Config.ReloadCharCommand)
+                LoadPlayerComponents(PlayerPedId(), CachedSkin, CachedComponents, false)
                 inOutfitsMenu = false
                 return menu.close(true, true, true)
             end
@@ -3181,11 +3183,12 @@ function OpenExternalOutfitsMenu(Outfits)
                     },
                     function(response)
                         if response then
-                            local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = OutfitComps, })
+                            local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { id = OutfitComps.id })
                             if not result then return end
                             menu.removeElementByIndex(outfitIndex)
                             menu.refresh()
                             Core.NotifyObjective("Outfit deleted", 5000)
+                            LoadPlayerComponents(PlayerPedId(), CachedSkin, CachedComponents, false)
                         end
                     end
                 )
@@ -3193,7 +3196,7 @@ function OpenExternalOutfitsMenu(Outfits)
         end,
         function(_, menu)
             inOutfitsMenu = false
-            ExecuteCommand(Config.ReloadCharCommand)
+            LoadPlayerComponents(PlayerPedId(), CachedSkin, CachedComponents, false)
             menu.close(true, true, true)
         end)
 end

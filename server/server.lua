@@ -337,6 +337,9 @@ Core.Callback.Register("vorp_character:callback:SetOutfit", function(source, cal
 	if not user then return callback(false) end
 
 	local character = user.getUsedCharacter
+	local unpacked = msgpack.unpack(arguments.Outfit)
+	arguments.Outfit = unpacked
+
 	if type(arguments.Outfit.comps) ~= "string" then
 		arguments.Outfit.comps = json.encode(arguments.Outfit.comps)
 	end
@@ -357,7 +360,7 @@ Core.Callback.Register("vorp_character:callback:DeleteOutfit", function(source, 
 
 	local character = user.getUsedCharacter
 	-- why is it using steam? each character should have its own set of outfits
-	MySQL.query.await("DELETE FROM outfits WHERE charidentifier = ? AND id = ?", { character.charIdentifier, arguments.Outfit.id })
+	MySQL.query.await("DELETE FROM outfits WHERE charidentifier = ? AND id = ?", { character.charIdentifier, arguments.id })
 
 	return callback(true)
 end)
