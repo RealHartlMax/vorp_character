@@ -1787,6 +1787,7 @@ function OpenHairMenu(table, value)
             hideRadar = true,
             openSound = true,
             divider = true,
+            enableCursor = true,
             cancelButton = buttons.cancelButton,
             confirmButton = buttons.confirmButton,
         },
@@ -2919,7 +2920,7 @@ function OpenOutfitsMenu(Table, value, Outfits)
 
     local elements = {}
 
-    for i, v in ipairs(Outfits) do
+    for _, v in ipairs(Outfits) do
         elements[#elements + 1] = {
             label = v.title,
             value = v,
@@ -2935,7 +2936,7 @@ function OpenOutfitsMenu(Table, value, Outfits)
             elements = elements,
             lastmenu = "OpenClothingMenu",
         },
-        function(data, menu)
+        function(data, _)
             if (data.current == "backup") then -- go back
                 return _G[data.trigger](Table, value, Outfits)
             end
