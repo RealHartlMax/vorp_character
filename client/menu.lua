@@ -3198,7 +3198,9 @@ function OpenExternalOutfitsMenu(Outfits)
         end,
         function(_, menu)
             inOutfitsMenu = false
-            LoadPlayerComponents(PlayerPedId(), CachedSkin, CachedComponents, false)
+            if not isUsingDefaultOutfit then
+                LoadPlayerComponents(PlayerPedId(), CachedSkin, CachedComponents, false)
+            end
             menu.close(true, true, true)
         end)
 end
