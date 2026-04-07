@@ -3102,6 +3102,7 @@ function OpenExternalOutfitsMenu(Outfits)
     end
 
     inOutfitsMenu = true
+    local isUsingDefaultOutfit = true
     local OutfitComps = elements[1].value
     local outfitIndex = 1
     local outfitTitle = elements[1].value.title
@@ -3129,12 +3130,13 @@ function OpenExternalOutfitsMenu(Outfits)
         },
         function(data, menu)
             if data.current.value ~= "delete" and data.current.value ~= "confirm" then
+                isUsingDefaultOutfit = false -- need a flag in database to set which outfit is active, so we dont save the one we are already using
                 OutfitComps = data.current.value
                 outfitIndex = data.current.index
                 outfitTitle = data.current.value.title
                 local Outfit <const> = OutfitComps.comps
 
-                if not Outfit.Teeth or Outfit.Teeth == -1 and CachedComponents.Teeth.comp ~= -1 then
+                if not Outfit?.Teeth or Outfit.Teeth == -1 and CachedComponents.Teeth.comp ~= -1 then
                     Outfit.Teeth = CachedComponents.Teeth.comp
                 end
 
@@ -3155,7 +3157,7 @@ function OpenExternalOutfitsMenu(Outfits)
                 end
             end
 
-            if data.current.value == "confirm" then
+            if data.current.value == "confirm" and not isUsingDefaultOutfit then
                 local packed <const> = msgpack.pack(OutfitComps)
                 local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:SetOutfit", { Outfit = packed })
                 if not result then return end
