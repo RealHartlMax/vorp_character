@@ -1787,7 +1787,6 @@ function OpenHairMenu(table, value)
             hideRadar = true,
             openSound = true,
             divider = true,
-            enableCursor = true,
             cancelButton = buttons.cancelButton,
             confirmButton = buttons.confirmButton,
         },
@@ -3119,6 +3118,7 @@ function OpenExternalOutfitsMenu(Outfits)
             openSound = true,
             hideRadar = true,
             maxVisibleItems = 6,
+            enableCursor = true,
             cancelButton = {
                 label = "Delete",
                 value = "delete",
