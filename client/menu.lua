@@ -3134,8 +3134,8 @@ function OpenExternalOutfitsMenu(Outfits)
                 outfitTitle = data.current.value.title
                 local Outfit <const> = OutfitComps.comps
 
-                if not OutfitComps.Teeth or OutfitComps.Teeth == -1 and CachedComponents.Teeth.comp ~= -1 then
-                    OutfitComps.Teeth = CachedComponents.Teeth.comp
+                if not Outfit.Teeth or Outfit.Teeth == -1 and CachedComponents.Teeth.comp ~= -1 then
+                    Outfit.Teeth = CachedComponents.Teeth.comp
                 end
 
                 do
