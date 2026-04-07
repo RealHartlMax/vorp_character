@@ -3102,6 +3102,7 @@ function OpenExternalOutfitsMenu(Outfits)
 
     inOutfitsMenu = true
     local OutfitComps = elements[1].value
+    local outfitIndex = 1
 
     MenuData.Open('default', GetCurrentResourceName(), 'OpenExternalOutfitsMenu',
         {
@@ -3127,6 +3128,7 @@ function OpenExternalOutfitsMenu(Outfits)
         function(data, menu)
             if data.current.value ~= "delete" and data.current.value ~= "confirm" then
                 OutfitComps = data.current.value
+                outfitIndex = data.current.index
                 local Outfit <const> = OutfitComps.comps
 
                 if (not OutfitComps.Teeth or OutfitComps.Teeth == -1) and CachedComponents.Teeth.comp ~= -1 then
@@ -3162,7 +3164,8 @@ function OpenExternalOutfitsMenu(Outfits)
                 local compTints <const> = OutfitComps.compTints and OutfitComps.compTints or {}
                 CachedComponents = ConvertTableComps(comps, IndexTintCompsToNumber(compTints))
 
-                LoadComps(PlayerPedId(), ConvertTableComps(comps, IndexTintCompsToNumber(OutfitComps.compTints)))
+                -- LoadComps(PlayerPedId(), ConvertTableComps(comps, IndexTintCompsToNumber(OutfitComps.compTints)))
+                ExecuteCommand(Config.ReloadCharCommand)
                 inOutfitsMenu = false
                 return menu.close(true, true, true)
             end
@@ -3170,8 +3173,7 @@ function OpenExternalOutfitsMenu(Outfits)
             if data.current.value == "delete" then
                 local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = data.current.value, })
                 if not result then return end
-
-                menu.removeElementByIndex(data.current.index)
+                menu.removeElementByIndex(outfitIndex)
                 menu.refresh()
                 Core.NotifyObjective("Outfit deleted", 5000)
                 return
@@ -3179,6 +3181,7 @@ function OpenExternalOutfitsMenu(Outfits)
         end,
         function(_, menu)
             inOutfitsMenu = false
+            ExecuteCommand(Config.ReloadCharCommand)
             menu.close(true, true, true)
         end)
 end
