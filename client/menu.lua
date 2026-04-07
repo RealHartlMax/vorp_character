@@ -3175,16 +3175,13 @@ function OpenExternalOutfitsMenu(Outfits)
                 menu.displayInput(
                     {
                         inputType = 'yesno',
-                        header = string.format('DELETE %s', outfitTitle),
+                        header = string.format('Delete outfit: %s', outfitTitle),
                         description = string.format('Are you sure you want to delete this outfit %s?', outfitTitle), -- for input type yesno only
-                        maxLength = 50,
                         buttons = { confirm = "yes", cancel = "no" },
-                        pattern = 'letters',
-                        patternMessage = "only letters alowed"
                     },
                     function(response)
                         if response then
-                            local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = data.current.value, })
+                            local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = OutfitComps, })
                             if not result then return end
                             menu.removeElementByIndex(outfitIndex)
                             menu.refresh()
