@@ -3095,7 +3095,7 @@ function OpenExternalOutfitsMenu(Outfits)
             label = outfit.title,
             value = outfit,
             desc = imgPath:format('clothing_generic_outfit'),
-            footerText = "press enter to preview outfit",
+            footerText = "select outfit to preview",
         }
     end
 
