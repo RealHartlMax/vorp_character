@@ -3113,7 +3113,6 @@ function OpenExternalOutfitsMenu(Outfits)
             subtext = T.MenuOutfits.subtitle,
             align = Config.Align,
             elements = elements,
-            lastmenu = "OpenClothingMenu",
             divider = true,
             fixedHeight = true,
             openSound = true,
