@@ -3066,22 +3066,19 @@ function OpenOutfitMenu(Table, value, Outfits, Outfit)
     )
 end
 
--- EXPORT TO OPEN MENU THROUGH OTHER SCRIPTS
 local inOutfitsMenu = false
-exports("OpenOutfitsMenu", function()
+RegisterNetEvent("vorp_character:Client:OpenOutfitsMenu", function(outfits)
+    if type(outfits) ~= "string" then
+        return print("use the export to open the menu")
+    end
+
     if inOutfitsMenu then
-        print("Already in outfits menu")
-        return
+        return print("Already in outfits menu")
     end
 
-    local result = Core.Callback.TriggerAwait("vorp_character:callback:GetOutfits")
-    if not result then
-        print("No outfits found")
-        return
-    end
-
-    OpenExternalOutfitsMenu(result)
-    return true
+    inOutfitsMenu = true
+    local unpacked = msgpack.unpack(outfits)
+    OpenExternalOutfitsMenu(unpacked)
 end)
 
 function OpenExternalOutfitsMenu(Outfits)
@@ -3095,7 +3092,7 @@ function OpenExternalOutfitsMenu(Outfits)
             label = outfit.title,
             value = outfit,
             desc = imgPath:format('clothing_generic_outfit'),
-            footerText = "select outfit to preview",
+            footerText = "click or press enter to preview outfit",
         }
     end
 
@@ -3124,7 +3121,7 @@ function OpenExternalOutfitsMenu(Outfits)
                 value = "delete",
             },
             confirmButton = {
-                label = "Select",
+                label = "Confirm",
                 value = "confirm",
             },
         },

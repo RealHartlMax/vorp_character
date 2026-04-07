@@ -353,3 +353,18 @@ Core.Callback.Register("vorp_character:callback:DeleteOutfit", function(source, 
 
 	return callback(true)
 end)
+
+-- EXPORT TO OPEN MENU THROUGH OTHER SCRIPTS
+
+exports("OpenOutfitsMenu", function(source)
+	local user = Core.getUser(source)
+	if not user then return end
+	local character = user.getUsedCharacter
+
+	local result = MySQL.query.await("SELECT id, title, comps, compTints FROM outfits WHERE `charidentifier` = ?", { character.charIdentifier })
+	if not result then return end
+
+	local packed = msgpack.pack(result)
+	TriggerClientEvent("vorp_character:Client:OpenOutfitsMenu", source, packed)
+	return true
+end)
