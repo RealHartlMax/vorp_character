@@ -3103,6 +3103,7 @@ function OpenExternalOutfitsMenu(Outfits)
     inOutfitsMenu = true
     local OutfitComps = elements[1].value
     local outfitIndex = 1
+    local outfitTitle = elements[1].value.title
 
     MenuData.Open('default', GetCurrentResourceName(), 'OpenExternalOutfitsMenu',
         {
@@ -3129,9 +3130,10 @@ function OpenExternalOutfitsMenu(Outfits)
             if data.current.value ~= "delete" and data.current.value ~= "confirm" then
                 OutfitComps = data.current.value
                 outfitIndex = data.current.index
+                outfitTitle = data.current.value.title
                 local Outfit <const> = OutfitComps.comps
 
-                if (not OutfitComps.Teeth or OutfitComps.Teeth == -1) and CachedComponents.Teeth.comp ~= -1 then
+                if not OutfitComps.Teeth or OutfitComps.Teeth == -1 and CachedComponents.Teeth.comp ~= -1 then
                     OutfitComps.Teeth = CachedComponents.Teeth.comp
                 end
 
@@ -3164,19 +3166,30 @@ function OpenExternalOutfitsMenu(Outfits)
                 local compTints <const> = OutfitComps.compTints and OutfitComps.compTints or {}
                 CachedComponents = ConvertTableComps(comps, IndexTintCompsToNumber(compTints))
 
-                -- LoadComps(PlayerPedId(), ConvertTableComps(comps, IndexTintCompsToNumber(OutfitComps.compTints)))
                 ExecuteCommand(Config.ReloadCharCommand)
                 inOutfitsMenu = false
                 return menu.close(true, true, true)
             end
 
             if data.current.value == "delete" then
-                local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = data.current.value, })
-                if not result then return end
-                menu.removeElementByIndex(outfitIndex)
-                menu.refresh()
-                Core.NotifyObjective("Outfit deleted", 5000)
-                return
+                menu.displayInput(
+                    {
+                        inputType = 'yesno',
+                        header = string.format('DELETE %s', outfitTitle),
+                        description = string.format('Are you sure you want to delete this outfit %s?', outfitTitle), -- for input type yesno only
+                        maxLength = 50,
+                        buttons = { confirm = "yes", cancel = "no" },
+                        pattern = 'letters',
+                        patternMessage = "only letters alowed"
+                    },
+                    function()
+                        local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = data.current.value, })
+                        if not result then return end
+                        menu.removeElementByIndex(outfitIndex)
+                        menu.refresh()
+                        Core.NotifyObjective("Outfit deleted", 5000)
+                    end
+                )
             end
         end,
         function(_, menu)
