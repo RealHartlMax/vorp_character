@@ -3182,12 +3182,14 @@ function OpenExternalOutfitsMenu(Outfits)
                         pattern = 'letters',
                         patternMessage = "only letters alowed"
                     },
-                    function()
-                        local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = data.current.value, })
-                        if not result then return end
-                        menu.removeElementByIndex(outfitIndex)
-                        menu.refresh()
-                        Core.NotifyObjective("Outfit deleted", 5000)
+                    function(response)
+                        if response then
+                            local result <const> = Core.Callback.TriggerAwait("vorp_character:callback:DeleteOutfit", { Outfit = data.current.value, })
+                            if not result then return end
+                            menu.removeElementByIndex(outfitIndex)
+                            menu.refresh()
+                            Core.NotifyObjective("Outfit deleted", 5000)
+                        end
                     end
                 )
             end
