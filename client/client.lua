@@ -167,6 +167,59 @@ local function LoadFaceFeatures(ped, skin)
 	end
 end
 
+local function ApplyPedOverlays(ped, skin)
+	canContinue = false
+
+	FaceOverlay("beardstabble", skin.beardstabble_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.beardstabble_color_primary, 0, 0, 1, skin.beardstabble_opacity)
+	FaceOverlay("hair", skin.hair_visibility, skin.hair_tx_id, 1, 0, 0, 1.0, 0, 1, skin.hair_color_primary, 0, 0, 1, skin.hair_opacity)
+	FaceOverlay("scars", skin.scars_visibility, skin.scars_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.scars_opacity)
+	FaceOverlay("spots", skin.spots_visibility, skin.spots_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.spots_opacity)
+	FaceOverlay("disc", skin.disc_visibility, skin.disc_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.disc_opacity)
+	FaceOverlay("complex", skin.complex_visibility, skin.complex_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.complex_opacity)
+	FaceOverlay("acne", skin.acne_visibility, skin.acne_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.acne_opacity)
+	FaceOverlay("ageing", skin.ageing_visibility, skin.ageing_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.ageing_opacity)
+	FaceOverlay("freckles", skin.freckles_visibility, skin.freckles_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.freckles_opacity)
+	FaceOverlay("moles", skin.moles_visibility, skin.moles_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.moles_opacity)
+	FaceOverlay("shadows", skin.shadows_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.shadows_palette_color_primary, skin.shadows_palette_color_secondary, skin.shadows_palette_color_tertiary, skin.shadows_palette_id, skin.shadows_opacity)
+	FaceOverlay("eyebrows", skin.eyebrows_visibility, skin.eyebrows_tx_id, 1, 0, 0, 1.0, 0, 1, skin.eyebrows_color, 0, 0, 1, skin.eyebrows_opacity)
+	FaceOverlay("eyeliners", skin.eyeliner_visibility, skin.eyeliner_tx_id, 1, 0, 0, 1.0, 0, 1, skin.eyeliner_color_primary, 0, 0, skin.eyeliner_palette_id, skin.eyeliner_opacity)
+	FaceOverlay("blush", skin.blush_visibility, skin.blush_tx_id, 1, 0, 0, 1.0, 0, 1, skin.blush_palette_color_primary, 0, 0, 1, skin.blush_opacity)
+	FaceOverlay("lipsticks", skin.lipsticks_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.lipsticks_palette_color_primary, skin.lipsticks_palette_color_secondary, skin.lipsticks_palette_color_tertiary, skin.lipsticks_palette_id, skin.lipsticks_opacity)
+
+	local gender = skin.sex == "mp_male" and "Male" or "Female"
+	local current_texture_settings = Config.texture_types[gender]
+
+	local albedo = skin.albedo
+	if not albedo or albedo == 0 then
+		albedo = current_texture_settings.albedo
+	end
+
+	if textureId ~= -1 then
+		Citizen.InvokeNative(0xB63B9178D0F58D82, textureId)
+		Citizen.InvokeNative(0x6BEFAA907B076859, textureId)
+	end
+
+	textureId = Citizen.InvokeNative(0xC5E7204F322E49EB, albedo, current_texture_settings.normal, current_texture_settings.material)
+	for k, v in ipairs(Config.overlay_all_layers) do
+		if v.visibility ~= 0 then
+			local overlay_id = Citizen.InvokeNative(0x86BB5FF45F193A02, textureId, v.tx_id, v.tx_normal, v.tx_material, v.tx_color_type, v.tx_opacity, v.tx_unk)
+			if v.tx_color_type == 0 then
+				Citizen.InvokeNative(0x1ED8588524AC9BE1, textureId, overlay_id, v.palette)
+				Citizen.InvokeNative(0x2DF59FFE6FFD6044, textureId, overlay_id, v.palette_color_primary, v.palette_color_secondary, v.palette_color_tertiary)
+			end
+			Citizen.InvokeNative(0x3329AAE2882FC8E4, textureId, overlay_id, v.var)
+			Citizen.InvokeNative(0x6C76BC24F8BB709A, textureId, overlay_id, v.opacity)
+		end
+	end
+
+	repeat Wait(0) until Citizen.InvokeNative(0x31DC8D3F216D8509, textureId)
+
+	Citizen.InvokeNative(0x0B46E25761519058, ped, joaat("heads"), textureId)
+	Citizen.InvokeNative(0x92DAABA2C1C10B0E, textureId)
+	IsPedReadyToRender(ped)
+	UpdatePedVariation(ped)
+end
+
 local function ApplyAllComponents(category, value, ped, set)
 	if value.comp == -1 then
 		return
@@ -290,6 +343,13 @@ end
 
 local function LoadCharacterSelect(ped, skin, components)
 	local gender = skin.sex == "mp_male" and "M" or "F"
+
+	if skin.sex ~= "mp_male" then
+		EquipMetaPedOutfitPreset(ped, 7)
+	else
+		EquipMetaPedOutfitPreset(ped, 4)
+	end
+
 	LoadAll(gender, ped, skin, components, false)
 	SetAttributeCoreValue(ped, 1, 100)
 	SetAttributeCoreValue(ped, 0, 100)
@@ -369,16 +429,27 @@ function StartSwapCharacters()
 			return error("your config spawn locations doesnt have enough spawn locations you need to add: " .. #myChars .. "Spawn locations")
 		end
 
-		data.PedHandler = CreatePed(joaat(value.skin.sex), data.spawn.x, data.spawn.y, data.spawn.z, data.spawn.w, false, false, false, false)
+		local modelHash = joaat(value.skin.sex)
+		SetPlayerModel(PlayerId(), modelHash, false)
+		local playerPed = PlayerPedId()
 
-		local start = GetGameTimer()
-		repeat Wait(0) until DoesEntityExist(data.PedHandler) or GetGameTimer() - start > 5000
-		if GetGameTimer() - start > 5000 then
-			print("Failed to create peds")
-			break
+		LoadCharacterSelect(playerPed, value.skin, value.components)
+		ApplyPedOverlays(playerPed, value.skin)
+		Wait(100)
+
+		data.PedHandler = ClonePed(playerPed, false, false, false, false)
+
+		if not data.PedHandler or not DoesEntityExist(data.PedHandler) then
+			data.PedHandler = CreatePed(modelHash, data.spawn.x, data.spawn.y, data.spawn.z, data.spawn.w, false, false, false, false)
+			LoadCharacterSelect(data.PedHandler, value.skin, value.components)
+		else
+			SetEntityCoords(data.PedHandler, data.spawn.x, data.spawn.y, data.spawn.z, false, false, false, false)
+			SetEntityHeading(data.PedHandler, data.spawn.w)
 		end
 
-		LoadCharacterSelect(data.PedHandler, value.skin, value.components)
+		SetEntityVisible(playerPed, false)
+		FreezeEntityPosition(playerPed, true)
+
 		data.Cam = CreateCamWithParams("DEFAULT_SCRIPTED_CAMERA", data.camera.x, data.camera.y, data.camera.z, data.camera.rotx, data.camera.roty, data.camera.rotz, data.camera.fov, false, 2)
 		SetEntityInvincible(data.PedHandler, true)
 		local randomScenario = math.random(1, #data.scenario[value.skin.sex])
