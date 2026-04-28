@@ -451,7 +451,10 @@ function StartSwapCharacters()
 		FreezeEntityPosition(playerPed, true)
 
 		data.Cam = CreateCamWithParams("DEFAULT_SCRIPTED_CAMERA", data.camera.x, data.camera.y, data.camera.z, data.camera.rotx, data.camera.roty, data.camera.rotz, data.camera.fov, false, 2)
+		FreezeEntityPosition(data.PedHandler, false)
 		SetEntityInvincible(data.PedHandler, true)
+		ClearPedTasks(data.PedHandler)
+		Wait(100)
 		local randomScenario = math.random(1, #data.scenario[value.skin.sex])
 		Citizen.InvokeNative(0x524B54361229154F, data.PedHandler, joaat(data.scenario[value.skin.sex][randomScenario]), -1, false, joaat(data.scenario[value.skin.sex][randomScenario]), -1.0, 0)
 		Peds[#Peds + 1] = data.PedHandler
