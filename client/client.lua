@@ -167,57 +167,22 @@ local function LoadFaceFeatures(ped, skin)
 	end
 end
 
-local function ApplyPedOverlays(ped, skin)
-	canContinue = false
-
-	FaceOverlay("beardstabble", skin.beardstabble_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.beardstabble_color_primary, 0, 0, 1, skin.beardstabble_opacity)
-	FaceOverlay("hair", skin.hair_visibility, skin.hair_tx_id, 1, 0, 0, 1.0, 0, 1, skin.hair_color_primary, 0, 0, 1, skin.hair_opacity)
-	FaceOverlay("scars", skin.scars_visibility, skin.scars_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.scars_opacity)
-	FaceOverlay("spots", skin.spots_visibility, skin.spots_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.spots_opacity)
-	FaceOverlay("disc", skin.disc_visibility, skin.disc_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.disc_opacity)
-	FaceOverlay("complex", skin.complex_visibility, skin.complex_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.complex_opacity)
-	FaceOverlay("acne", skin.acne_visibility, skin.acne_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.acne_opacity)
-	FaceOverlay("ageing", skin.ageing_visibility, skin.ageing_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.ageing_opacity)
-	FaceOverlay("freckles", skin.freckles_visibility, skin.freckles_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.freckles_opacity)
-	FaceOverlay("moles", skin.moles_visibility, skin.moles_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.moles_opacity)
-	FaceOverlay("shadows", skin.shadows_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.shadows_palette_color_primary, skin.shadows_palette_color_secondary, skin.shadows_palette_color_tertiary, skin.shadows_palette_id, skin.shadows_opacity)
-	FaceOverlay("eyebrows", skin.eyebrows_visibility, skin.eyebrows_tx_id, 1, 0, 0, 1.0, 0, 1, skin.eyebrows_color, 0, 0, 1, skin.eyebrows_opacity)
-	FaceOverlay("eyeliners", skin.eyeliner_visibility, skin.eyeliner_tx_id, 1, 0, 0, 1.0, 0, 1, skin.eyeliner_color_primary, 0, 0, skin.eyeliner_palette_id, skin.eyeliner_opacity)
-	FaceOverlay("blush", skin.blush_visibility, skin.blush_tx_id, 1, 0, 0, 1.0, 0, 1, skin.blush_palette_color_primary, 0, 0, 1, skin.blush_opacity)
-	FaceOverlay("lipsticks", skin.lipsticks_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.lipsticks_palette_color_primary, skin.lipsticks_palette_color_secondary, skin.lipsticks_palette_color_tertiary, skin.lipsticks_palette_id, skin.lipsticks_opacity)
-
-	local gender = skin.sex == "mp_male" and "Male" or "Female"
-	local current_texture_settings = Config.texture_types[gender]
-
-	local albedo = skin.albedo
-	if not albedo or albedo == 0 then
-		albedo = current_texture_settings.albedo
+local function ApplyFaceOverlays(skin)
+	for _, n in ipairs({"scars","spots","disc","complex","acne","ageing","freckles","moles"}) do
+		FaceOverlay(n, skin[n.."_visibility"], skin[n.."_tx_id"], 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin[n.."_opacity"])
 	end
-
-	if textureId ~= -1 then
-		Citizen.InvokeNative(0xB63B9178D0F58D82, textureId)
-		Citizen.InvokeNative(0x6BEFAA907B076859, textureId)
+	local V = function(k) return type(k)=="number" and k or skin[k] end
+	for _, o in ipairs({
+		{"beardstabble","beardstabble",1,"beardstabble_color_primary",0,0,1},
+		{"hair","hair","hair_tx_id","hair_color_primary",0,0,1},
+		{"shadows","shadows",1,"shadows_palette_color_primary","shadows_palette_color_secondary","shadows_palette_color_tertiary","shadows_palette_id"},
+		{"eyebrows","eyebrows","eyebrows_tx_id","eyebrows_color",0,0,1},
+		{"eyeliners","eyeliner","eyeliner_tx_id","eyeliner_color_primary",0,0,"eyeliner_palette_id"},
+		{"blush","blush","blush_tx_id","blush_palette_color_primary",0,0,1},
+		{"lipsticks","lipsticks",1,"lipsticks_palette_color_primary","lipsticks_palette_color_secondary","lipsticks_palette_color_tertiary","lipsticks_palette_id"},
+	}) do
+		FaceOverlay(o[1], skin[o[2].."_visibility"], V(o[3]), 1, 0, 0, 1.0, 0, 1, V(o[4]), V(o[5]), V(o[6]), V(o[7]), skin[o[2].."_opacity"])
 	end
-
-	textureId = Citizen.InvokeNative(0xC5E7204F322E49EB, albedo, current_texture_settings.normal, current_texture_settings.material)
-	for k, v in ipairs(Config.overlay_all_layers) do
-		if v.visibility ~= 0 then
-			local overlay_id = Citizen.InvokeNative(0x86BB5FF45F193A02, textureId, v.tx_id, v.tx_normal, v.tx_material, v.tx_color_type, v.tx_opacity, v.tx_unk)
-			if v.tx_color_type == 0 then
-				Citizen.InvokeNative(0x1ED8588524AC9BE1, textureId, overlay_id, v.palette)
-				Citizen.InvokeNative(0x2DF59FFE6FFD6044, textureId, overlay_id, v.palette_color_primary, v.palette_color_secondary, v.palette_color_tertiary)
-			end
-			Citizen.InvokeNative(0x3329AAE2882FC8E4, textureId, overlay_id, v.var)
-			Citizen.InvokeNative(0x6C76BC24F8BB709A, textureId, overlay_id, v.opacity)
-		end
-	end
-
-	repeat Wait(0) until Citizen.InvokeNative(0x31DC8D3F216D8509, textureId)
-
-	Citizen.InvokeNative(0x0B46E25761519058, ped, joaat("heads"), textureId)
-	Citizen.InvokeNative(0x92DAABA2C1C10B0E, textureId)
-	IsPedReadyToRender(ped)
-	UpdatePedVariation(ped)
 end
 
 local function ApplyAllComponents(category, value, ped, set)
@@ -434,8 +399,12 @@ function StartSwapCharacters()
 		local playerPed = PlayerPedId()
 
 		LoadCharacterSelect(playerPed, value.skin, value.components)
-		ApplyPedOverlays(playerPed, value.skin)
-		Wait(100)
+		CachedSkin = value.skin
+		canContinue = false
+		ApplyFaceOverlays(value.skin)
+		canContinue = true
+		FaceOverlay("grime", value.skin.grime_visibility, value.skin.grime_tx_id, 0, 0, 0, 1.0, 0, 1, 0, 0, 0, 1, value.skin.grime_opacity)
+		Wait(500)
 
 		data.PedHandler = ClonePed(playerPed, false, false, false, false)
 
@@ -773,21 +742,8 @@ function LoadPlayerComponents(ped, skin, components, reload)
 	skin = LoadAll(gender, ped, skin, components, true)
 	RegisterBodyIndexs(skin)
 	ApplyRolledClothingStatus()
-	FaceOverlay("beardstabble", skin.beardstabble_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.beardstabble_color_primary, 0, 0, 1, skin.beardstabble_opacity)
-	FaceOverlay("hair", skin.hair_visibility, skin.hair_tx_id, 1, 0, 0, 1.0, 0, 1, skin.hair_color_primary, 0, 0, 1, skin.hair_opacity)
-	FaceOverlay("scars", skin.scars_visibility, skin.scars_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.scars_opacity)
-	FaceOverlay("spots", skin.spots_visibility, skin.spots_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.spots_opacity)
-	FaceOverlay("disc", skin.disc_visibility, skin.disc_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.disc_opacity)
-	FaceOverlay("complex", skin.complex_visibility, skin.complex_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.complex_opacity)
-	FaceOverlay("acne", skin.acne_visibility, skin.acne_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.acne_opacity)
-	FaceOverlay("ageing", skin.ageing_visibility, skin.ageing_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.ageing_opacity)
-	FaceOverlay("freckles", skin.freckles_visibility, skin.freckles_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.freckles_opacity)
-	FaceOverlay("moles", skin.moles_visibility, skin.moles_tx_id, 0, 0, 1, 1.0, 0, 0, 0, 0, 0, 1, skin.moles_opacity)
-	FaceOverlay("shadows", skin.shadows_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.shadows_palette_color_primary, skin.shadows_palette_color_secondary, skin.shadows_palette_color_tertiary, skin.shadows_palette_id, skin.shadows_opacity)
-	FaceOverlay("eyebrows", skin.eyebrows_visibility, skin.eyebrows_tx_id, 1, 0, 0, 1.0, 0, 1, skin.eyebrows_color, 0, 0, 1, skin.eyebrows_opacity)
-	FaceOverlay("eyeliners", skin.eyeliner_visibility, skin.eyeliner_tx_id, 1, 0, 0, 1.0, 0, 1, skin.eyeliner_color_primary, 0, 0, skin.eyeliner_palette_id, skin.eyeliner_opacity)
-	FaceOverlay("blush", skin.blush_visibility, skin.blush_tx_id, 1, 0, 0, 1.0, 0, 1, skin.blush_palette_color_primary, 0, 0, 1, skin.blush_opacity)
-	FaceOverlay("lipsticks", skin.lipsticks_visibility, 1, 1, 0, 0, 1.0, 0, 1, skin.lipsticks_palette_color_primary, skin.lipsticks_palette_color_secondary, skin.lipsticks_palette_color_tertiary, skin.lipsticks_palette_id, skin.lipsticks_opacity)
+	canContinue = false
+	ApplyFaceOverlays(skin)
 	canContinue = true
 	FaceOverlay("grime", skin.grime_visibility, skin.grime_tx_id, 0, 0, 0, 1.0, 0, 1, 0, 0, 0, 1, skin.grime_opacity)
 	Wait(200)
