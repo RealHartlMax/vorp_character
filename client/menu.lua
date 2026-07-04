@@ -194,11 +194,130 @@ local function GetDescriptionLayout(value, price)
             desc = desc .. T.Other.Gold
         elseif ConfigShops.SecondChanceCurrency == 2 then
             desc = desc .. T.PayToShop.Tokens
+        elseif ConfigShops.SecondChanceCurrency == 3 then
+            desc = desc .. (T.PayToShop.Pesos or "Pesos: ")
         end
         desc = desc .. (price or GetCurrentAmmountToPay()) .. "</span><br>" .. Divider
         return desc
     end
     return desc
+end
+
+local function GetShopCurrencyType(shopType)
+    if type(shopType) ~= "string" then
+        shopType = ShopType
+    end
+
+    local function normalizeCurrencyType(currency)
+        currency = tonumber(currency)
+        if currency and currency >= 0 and currency <= 3 then
+            return currency
+        end
+
+        return 0
+    end
+
+    local function getShopPaymentRule(currentShopType)
+        if currentShopType == "secondchance" then
+            return {
+                mode = "single",
+                currency = normalizeCurrencyType(ConfigShops.SecondChanceCurrency)
+            }
+        end
+
+        local payments = ConfigShops.Payments or {}
+        local byLocation = payments.byLocation or {}
+        local locationIndex = tonumber(CurrentShopLocationIndex)
+        local locationRule = locationIndex and byLocation[locationIndex] or nil
+        local locationData = locationIndex and ConfigShops.Locations and ConfigShops.Locations[locationIndex] or nil
+        local rule = (locationData and locationData.Payment) or locationRule or payments.default
+
+        if type(rule) ~= "table" then
+            return {
+                mode = "single",
+                currency = normalizeCurrencyType(ConfigShops.PayToShopCurrency)
+            }
+        end
+
+        if rule.mode == "split" then
+            return {
+                mode = "split",
+                firstCurrency = normalizeCurrencyType(rule.firstCurrency or rule.currency or ConfigShops.PayToShopCurrency),
+                secondCurrency = normalizeCurrencyType(rule.secondCurrency)
+            }
+        end
+
+        return {
+            mode = "single",
+            currency = normalizeCurrencyType(rule.currency or ConfigShops.PayToShopCurrency)
+        }
+    end
+
+    local rule = getShopPaymentRule(shopType)
+
+    if rule.mode == "split" then
+        return rule.firstCurrency
+    end
+
+    return rule.currency
+end
+
+local function GetShopCurrencyLabel(shopType)
+    local function currencyLabel(currencyType)
+        if currencyType == 0 then
+            return T.PayToShop.Currency or "$"
+        end
+
+        if currencyType == 1 then
+            return (T.Other.Gold or "Gold"):gsub(":", "")
+        end
+
+        if currencyType == 2 then
+            return (T.PayToShop.Tokens or "Tokens"):gsub(":", "")
+        end
+
+        if currencyType == 3 then
+            return (T.PayToShop.Pesos or "Pesos"):gsub(":", "")
+        end
+
+        return T.PayToShop.Currency or "$"
+    end
+
+    local function normalizeCurrencyType(currency)
+        currency = tonumber(currency)
+        if currency and currency >= 0 and currency <= 3 then
+            return currency
+        end
+
+        return 0
+    end
+
+    if type(shopType) ~= "string" then
+        shopType = ShopType
+    end
+
+    if shopType == "secondchance" then
+        return currencyLabel(normalizeCurrencyType(ConfigShops.SecondChanceCurrency))
+    end
+
+    local payments = ConfigShops.Payments or {}
+    local byLocation = payments.byLocation or {}
+    local locationIndex = tonumber(CurrentShopLocationIndex)
+    local locationRule = locationIndex and byLocation[locationIndex] or nil
+    local locationData = locationIndex and ConfigShops.Locations and ConfigShops.Locations[locationIndex] or nil
+    local rule = (locationData and locationData.Payment) or locationRule or payments.default
+
+    if type(rule) ~= "table" then
+        return currencyLabel(normalizeCurrencyType(ConfigShops.PayToShopCurrency))
+    end
+
+    if rule.mode == "split" then
+        local firstLabel = currencyLabel(normalizeCurrencyType(rule.firstCurrency or rule.currency or ConfigShops.PayToShopCurrency))
+        local secondLabel = currencyLabel(normalizeCurrencyType(rule.secondCurrency))
+        return firstLabel .. " + " .. secondLabel
+    end
+
+    return currencyLabel(normalizeCurrencyType(rule.currency or ConfigShops.PayToShopCurrency))
 end
 
 -- Help function for structuring input prompts
@@ -682,7 +801,7 @@ function OpenClothingMenu(Table, value, Outfits)
                 value = "close",
             },
             confirmButton = {
-                label = T.Inputs.confirmpurchase,
+                label = T.Inputs.confirmpurchase .. " (" .. GetShopCurrencyLabel(ShopType) .. ")",
                 value = "buy",
             },
         }
@@ -749,6 +868,9 @@ function OpenClothingMenu(Table, value, Outfits)
                                 skin = CachedSkin,
                                 compTints = PlayerTrackingData,
                                 amount = GetCurrentAmmountToPay(),
+                                currency = GetShopCurrencyType(ShopType),
+                                shopType = ShopType,
+                                shopLocationIndex = CurrentShopLocationIndex,
                                 Result = Result,
                             })
                         if resultCb then
@@ -1767,7 +1889,7 @@ function OpenHairMenu(table, value)
                 value = "close",
             },
             confirmButton = {
-                label = T.Inputs.confirmpurchase,
+                label = T.Inputs.confirmpurchase .. " (" .. GetShopCurrencyLabel(ShopType) .. ")",
                 value = "confirm",
             },
         }
@@ -1806,7 +1928,7 @@ function OpenHairMenu(table, value)
             if data.current.value == "confirm" then
                 if GetCurrentAmmountToPay() > 0 then
                     local NewTable = GetNewCompOldStructure(PlayerClothing)
-                    local result = Core.Callback.TriggerAwait("vorp_character:callback:PayToShop", { skin = PlayerSkin, comps = NewTable, amount = GetCurrentAmmountToPay() })
+                    local result = Core.Callback.TriggerAwait("vorp_character:callback:PayToShop", { skin = PlayerSkin, comps = NewTable, amount = GetCurrentAmmountToPay(), currency = GetShopCurrencyType(ShopType), shopType = ShopType, shopLocationIndex = CurrentShopLocationIndex })
                     if result then
                         CachedSkin = PlayerSkin
                         UpdateCache(NewTable)
@@ -2275,7 +2397,7 @@ function OpenFaceMenu(table, value)
                 value = "close",
             },
             confirmButton = {
-                label = T.Inputs.confirmpurchase,
+                label = T.Inputs.confirmpurchase .. " (" .. GetShopCurrencyLabel(ShopType) .. ")",
                 value = "confirm",
             },
         }
@@ -2314,7 +2436,7 @@ function OpenFaceMenu(table, value)
             if data.current.value == "confirm" then
                 if GetCurrentAmmountToPay() > 0 then
                     local NewTable = GetNewCompOldStructure(PlayerClothing)
-                    local result = Core.Callback.TriggerAwait("vorp_character:callback:PayToShop", { skin = PlayerSkin, comps = NewTable, amount = GetCurrentAmmountToPay() })
+                    local result = Core.Callback.TriggerAwait("vorp_character:callback:PayToShop", { skin = PlayerSkin, comps = NewTable, amount = GetCurrentAmmountToPay(), currency = GetShopCurrencyType(ShopType), shopType = ShopType, shopLocationIndex = CurrentShopLocationIndex })
                     if result then
                         CachedSkin = PlayerSkin
                         UpdateCache(NewTable)
@@ -2507,7 +2629,7 @@ function OpenLifeStyleMenu(table, value)
                 value = "close",
             },
             confirmButton = {
-                label = T.Inputs.confirmpurchase,
+                label = T.Inputs.confirmpurchase .. " (" .. GetShopCurrencyLabel(ShopType) .. ")",
                 value = "confirm",
             },
         }
@@ -2541,7 +2663,7 @@ function OpenLifeStyleMenu(table, value)
 
             if data.current.value == "confirm" then
                 if GetCurrentAmmountToPay() > 0 then
-                    local result = Core.Callback.TriggerAwait("vorp_character:callback:PayToShop", { amount = GetCurrentAmmountToPay(), skin = PlayerSkin })
+                    local result = Core.Callback.TriggerAwait("vorp_character:callback:PayToShop", { amount = GetCurrentAmmountToPay(), skin = PlayerSkin, currency = GetShopCurrencyType(ShopType), shopType = ShopType, shopLocationIndex = CurrentShopLocationIndex })
                     if result then
                         CachedSkin = PlayerSkin
                     end
@@ -2777,7 +2899,7 @@ function OpenMakeupMenu(table, value)
                 value = "close",
             },
             confirmButton = {
-                label = T.Inputs.confirmpurchase,
+                label = T.Inputs.confirmpurchase .. " (" .. GetShopCurrencyLabel(ShopType) .. ")",
                 value = "confirm",
             },
         }
@@ -2815,7 +2937,7 @@ function OpenMakeupMenu(table, value)
 
             if data.current.value == "confirm" then
                 if GetCurrentAmmountToPay() > 0 then
-                    local result = Core.Callback.TriggerAwait("vorp_character:callback:PayToShop", { amount = GetCurrentAmmountToPay(), skin = PlayerSkin })
+                    local result = Core.Callback.TriggerAwait("vorp_character:callback:PayToShop", { amount = GetCurrentAmmountToPay(), skin = PlayerSkin, currency = GetShopCurrencyType(ShopType), shopType = ShopType, shopLocationIndex = CurrentShopLocationIndex })
                     if result then
                         CachedSkin = PlayerSkin
                     end

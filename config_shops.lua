@@ -4,7 +4,32 @@ ConfigShops.UseShops             = true  -- if you want to use the shops set to 
 
 ConfigShops.SecondChancePrice    = 15000 -- if store is second chance then this is the price they need to pay to use it
 
-ConfigShops.SecondChanceCurrency = 0     -- 0 is cash 1 is gold 2 is tokens currency
+ConfigShops.SecondChanceCurrency = 3     -- 0 is cash 1 is gold 2 is tokens currency 3 is pesos currency
+
+ConfigShops.PayToShopCurrency    = 0     -- default currency for normal shop checkout: 0 cash 1 gold 2 tokens 3 pesos
+
+-- Payment rules for normal shop checkouts (not second chance).
+-- mode = "single": deduct from one currency.
+-- mode = "split": deduct from firstCurrency and then secondCurrency if needed.
+ConfigShops.Payments = {
+    default = {
+        mode = "single",
+        currency = ConfigShops.PayToShopCurrency,
+    },
+    byLocation = {
+        [1] = { mode = "split", firstCurrency = 3, secondCurrency = 0 }, -- Valentine
+        [2] = { mode = "split", firstCurrency = 3, secondCurrency = 0 }, -- Blackwater
+        [3] = { mode = "split", firstCurrency = 3, secondCurrency = 0 }, -- Rhodes
+        [4] = { mode = "split", firstCurrency = 3, secondCurrency = 0 }, -- Saint Denis
+        [5] = { mode = "split", firstCurrency = 3, secondCurrency = 0 }, -- Strawberry
+        [6] = { mode = "split", firstCurrency = 3, secondCurrency = 0 }, -- Tumbleweed
+        [7] = { mode = "split", firstCurrency = 3, secondCurrency = 0 }, -- Armadillo
+    }
+}
+
+-- You can also override payment directly per location with:
+-- Payment = { mode = "single", currency = 0 }
+-- Payment = { mode = "split", firstCurrency = 3, secondCurrency = 0 }
 --[[ types of stores]]
 --
 -- clothing

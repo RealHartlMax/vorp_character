@@ -86,6 +86,7 @@ local function GetPlayerData(source)
 			charIdentifier = characters.charIdentifier,
 			money = characters.money,
 			gold = characters.gold,
+			pesos = characters.pesos or 0,
 			firstname = characters.firstname,
 			lastname = characters.lastname,
 			skin = skin,
@@ -229,21 +230,122 @@ Core.Callback.Register("vorp_character:callback:PayToShop", function(source, cal
 		return callback(false)
 	end
 	local character = user.getUsedCharacter
-	local money = character.money
-	local amountToPay = tonumber(arguments.amount)
+	local function normalizeCurrencyType(currency)
+		currency = tonumber(currency)
+		if currency and currency >= 0 and currency <= 3 then
+			return currency
+		end
 
-	if money < amountToPay then
-		SetTimeout(5000, function()
-			Core.NotifyRightTip(source, string.format(T.PayToShop.DontMoney, amountToPay), 6000)
-		end)
+		return 0
+	end
+
+	local function getCurrencyBalance(currency)
+		if currency == 0 then return character.money or 0 end
+		if currency == 1 then return character.gold or 0 end
+		if currency == 2 then return character.rol or 0 end
+		if currency == 3 then return character.pesos or 0 end
+		return 0
+	end
+
+	local function getCurrencyName(currency)
+		if currency == 0 then return "money" end
+		if currency == 1 then return "gold" end
+		if currency == 2 then return "rol" end
+		if currency == 3 then return "pesos" end
+		return "money"
+	end
+
+	local function getShopPaymentRule(shopType)
+		if shopType == "secondchance" then
+			return {
+				mode = "single",
+				currency = normalizeCurrencyType(ConfigShops.SecondChanceCurrency)
+			}
+		end
+
+		local payments = ConfigShops.Payments or {}
+		local byLocation = payments.byLocation or {}
+		local locationIndex = tonumber(arguments.shopLocationIndex)
+		local locationRule = locationIndex and byLocation[locationIndex] or nil
+		local locationData = locationIndex and ConfigShops.Locations and ConfigShops.Locations[locationIndex] or nil
+		local rule = (locationData and locationData.Payment) or locationRule or payments.default
+
+		if type(rule) ~= "table" then
+			return {
+				mode = "single",
+				currency = normalizeCurrencyType(ConfigShops.PayToShopCurrency)
+			}
+		end
+
+		if rule.mode == "split" then
+			return {
+				mode = "split",
+				firstCurrency = normalizeCurrencyType(rule.firstCurrency or rule.currency or ConfigShops.PayToShopCurrency),
+				secondCurrency = normalizeCurrencyType(rule.secondCurrency)
+			}
+		end
+
+		return {
+			mode = "single",
+			currency = normalizeCurrencyType(rule.currency or ConfigShops.PayToShopCurrency)
+		}
+	end
+
+	local paymentRule = getShopPaymentRule(arguments.shopType)
+
+	-- Backward-compatible override for existing callers when mode is single.
+	if paymentRule.mode == "single" and arguments.currency ~= nil then
+		paymentRule.currency = normalizeCurrencyType(arguments.currency)
+	end
+
+	local amountToPay = tonumber(arguments.amount)
+	if not amountToPay or amountToPay <= 0 then
 		return callback(false)
+	end
+
+	if paymentRule.mode == "split" then
+		local firstCurrency = paymentRule.firstCurrency
+		local secondCurrency = paymentRule.secondCurrency
+		local firstBalance = getCurrencyBalance(firstCurrency)
+		local secondBalance = getCurrencyBalance(secondCurrency)
+		local combined = firstBalance + secondBalance
+
+		if combined < amountToPay then
+			local moneyType = getCurrencyName(firstCurrency) .. "+" .. getCurrencyName(secondCurrency)
+			SetTimeout(5000, function()
+				Core.NotifyRightTip(source, string.format(T.PayToShop.notenoughtMoney, moneyType, amountToPay), 6000)
+			end)
+			return callback(false)
+		end
+
+		local firstTake = math.min(firstBalance, amountToPay)
+		local secondTake = amountToPay - firstTake
+
+		if firstTake > 0 then
+			character.removeCurrency(firstCurrency, firstTake)
+		end
+
+		if secondTake > 0 then
+			character.removeCurrency(secondCurrency, secondTake)
+		end
+	else
+		local currencyType = paymentRule.currency
+		local money = getCurrencyBalance(currencyType)
+		local moneyType = getCurrencyName(currencyType)
+
+		if money < amountToPay then
+			SetTimeout(5000, function()
+				Core.NotifyRightTip(source, string.format(T.PayToShop.notenoughtMoney, moneyType, amountToPay), 6000)
+			end)
+			return callback(false)
+		end
+
+		character.removeCurrency(currencyType, amountToPay)
 	end
 
 	SetTimeout(5000, function()
 		Core.NotifyRightTip(source, string.format(T.PayToShop.Youpaid, amountToPay), 6000)
 	end)
-
-	character.removeCurrency(0, amountToPay)
 
 	if arguments.skin then
 		character.updateSkin((json.encode(arguments.skin)))
@@ -269,9 +371,9 @@ end)
 
 local function CanProcceed(user, source)
 	local character = user.getUsedCharacter
-	local money = ConfigShops.SecondChanceCurrency == 0 and character.money or ConfigShops.SecondChanceCurrency == 1 and character.gold or ConfigShops.SecondChanceCurrency == 2 and character.rol
+	local money = ConfigShops.SecondChanceCurrency == 0 and character.money or ConfigShops.SecondChanceCurrency == 1 and character.gold or ConfigShops.SecondChanceCurrency == 2 and character.rol or ConfigShops.SecondChanceCurrency == 3 and character.pesos or 0
 	local amountToPay = ConfigShops.SecondChancePrice
-	local moneyType = ConfigShops.SecondChanceCurrency == 0 and "money" or ConfigShops.SecondChanceCurrency == 1 and "gold" or ConfigShops.SecondChanceCurrency == 2 and "rol"
+	local moneyType = ConfigShops.SecondChanceCurrency == 0 and "money" or ConfigShops.SecondChanceCurrency == 1 and "gold" or ConfigShops.SecondChanceCurrency == 2 and "rol" or ConfigShops.SecondChanceCurrency == 3 and "pesos" or "money"
 
 	if money < amountToPay then
 		Core.NotifyRightTip(source, string.format(T.PayToShop.notenoughtMoney, moneyType, ConfigShops.SecondChancePrice), 6000)

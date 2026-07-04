@@ -24,6 +24,9 @@ Config.UseInitialAnimScene = true
 -- this will show gold next to money in character selection
 Config.ShowGold = false
 
+-- this will show pesos next to money in character selection
+Config.ShowPesos = true
+
 -- set false to not show character description on selction menu
 Config.showchardesc = true
 

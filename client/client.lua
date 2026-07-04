@@ -549,12 +549,18 @@ local function GetCharacterDescDetails(value)
 	desc       = desc .. "<th style='text-align: left; font-family:crock;'>" .. T.Other.Money .. "</th>"
 	desc       = desc .. "<td style='text-align: center;'>$ " .. value.money .. "</td>"
 	desc       = desc .. "</tr>"
+	if Config.ShowPesos then
+		desc = desc .. "<tr>"
+		desc = desc .. "<th style='text-align: left; font-family:crock;'>" .. (T.Other.Pesos or "Pesos: ") .. "</th>"
+		desc = desc .. "<td style='text-align: center;'>$ " .. (value.pesos or 0) .. "</td>"
+		desc = desc .. "</tr>"
+	end
 	if Config.ShowGold then
 		desc = desc .. "<tr>"
 		desc = desc .. "<th style='text-align: left; font-family:crock;'>" .. T.Other.Gold .. "</th>"
 		desc = desc .. "<td style='text-align: center;'>* " .. value.gold .. "</td>"
+		desc = desc .. "</tr>"
 	end
-	desc = desc .. "</tr>"
 	desc = desc .. "</table>"
 	return desc
 end

@@ -1,6 +1,7 @@
 IsInClothingStore = false
 local group       = GetRandomIntInRange(0, 0xffffff)
 ShopType          = ""
+CurrentShopLocationIndex = nil
 
 
 local GetEntityCoords                  = GetEntityCoords
@@ -108,10 +109,10 @@ CreateThread(function()
                             if shopType == "secondchance" then
                                 local result = Core.Callback.TriggerAwait("vorp_character:callback:CanPayForSecondChance")
                                 if result then
-                                    PrepareClothingStore(value, shopType)
+                                    PrepareClothingStore(value, shopType, index)
                                 end
                             else
-                                PrepareClothingStore(value, shopType)
+                                PrepareClothingStore(value, shopType, index)
                             end
                         end
                     end
@@ -138,8 +139,9 @@ AddEventHandler('onResourceStop', function(resourceName)
 end)
 
 
-function PrepareClothingStore(value, shopType)
+function PrepareClothingStore(value, shopType, shopLocationIndex)
     ShopType = shopType
+    CurrentShopLocationIndex = shopLocationIndex
     DoScreenFadeOut(1000)
     repeat Wait(0) until IsScreenFadedOut()
     Core.instancePlayers(GetPlayerServerId(PlayerId()) + 4440)
